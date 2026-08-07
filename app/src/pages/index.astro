@@ -13,6 +13,9 @@ import "../styles/global.css";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve as resolvePath } from "node:path";
+const assetBase = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
 // Default OG image served from public/. The URL is fingerprinted with a short
 // content hash of the article source so social platforms (X/Twitter, LinkedIn,
 // Slack, …) re-fetch the preview automatically whenever the article changes,
@@ -31,7 +34,7 @@ try {
     .digest("hex")
     .slice(0, 10);
 } catch {}
-const ogDefaultUrl = `/thumb.auto.jpg${ogVersion ? `?v=${ogVersion}` : ""}`;
+const ogDefaultUrl = `${assetBase}hero-mri.webp${ogVersion ? `?v=${ogVersion}` : ""}`;
 const articleFM = (ArticleMod as any).frontmatter ?? {};
 const Article = (ArticleMod as any).default;
 // Helper to strip HTML tags
@@ -204,6 +207,7 @@ const links: Array<{ label: string; url: string; icon?: string }> =
   lang="en"
   data-theme="light"
   data-template={template}
+  data-asset-base={assetBase}
   data-toc-auto-collapse={tableOfContentAutoCollapse ? "1" : "0"}
 >
   <head>
@@ -252,13 +256,13 @@ const links: Array<{ label: string; url: string; icon?: string }> =
         };
       })();
     </script>
-    <script type="module" src="/scripts/color-palettes.js"></script>
+    <script is:inline type="module" src={`${assetBase}scripts/color-palettes.js`}></script>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"
     ></script>
-    <script src="/src/scripts/mermaid-zoom.js"></script>
+    <script src="../scripts/mermaid-zoom.js"></script>
     <script>
       // Debug and global zoom initialization
 

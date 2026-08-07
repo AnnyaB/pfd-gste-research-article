@@ -26,18 +26,23 @@ import rehypeWrapOutput from './plugins/rehype/wrap-outputs.mjs';
 
 // Auto-detect HF Space URL for SEO (og:image needs absolute URLs)
 const spaceId = process.env.SPACE_ID; // e.g. "tfrere/research-article-template"
+const githubPages = process.env.GITHUB_PAGES === 'true';
+const githubPagesBase = '/pfd-gste-research-article';
 const siteUrl = spaceId
   ? `https://${spaceId.replace('/', '-').toLowerCase()}.hf.space`
-  : undefined;
+  : githubPages
+    ? 'https://annyab.github.io'
+    : undefined;
 
 export default defineConfig({
   ...(siteUrl ? { site: siteUrl } : {}),
+  ...(githubPages ? { base: githubPagesBase } : {}),
   output: 'static',
   integrations: [
     mermaid({ theme: 'neutral', autoTheme: true }),
     mdx(),
     svelte(),
-    sitemap(),
+    ...(githubPages ? [] : [sitemap()]),
     generateLlmsTxt(),
     // Precompress output with Gzip only (Brotli disabled due to server module mismatch)
     compressor({ brotli: false, gzip: true })
@@ -87,5 +92,3 @@ export default defineConfig({
     ]
   }
 });
-
-
