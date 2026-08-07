@@ -140,7 +140,7 @@ The forward-looking [Evidence Upgrade Protocol](VALIDATION_PLAN.md) defines five
 pfd-gste-research-article/
 ├── .github/workflows/deploy-pages.yml   # Reproducible GitHub Pages deployment
 ├── app/
-│   ├── public/                          # Static figures and report PDF
+│   ├── public/                          # Static figures
 │   └── src/
 │       ├── content/
 │       │   ├── article.mdx              # Metadata and chapter order
