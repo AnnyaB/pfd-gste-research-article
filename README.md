@@ -32,10 +32,10 @@
 
 Can learned spatial guidance encourage a hybrid CNN–Transformer to focus on pathology-relevant evidence without sacrificing classification performance—and does that conclusion survive leakage-aware evaluation?
 
-This repository presents the project as a web-native research article built with the official [Hugging Face Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template), the article system used by [CorrSteer](https://seonglae-corrsteer.hf.space/). It connects the submitted report, implementation, machine-readable results, interactive figures, and an explicit evidence-upgrade protocol in one auditable publication surface.
+This repository presents the project as a web-native research article built with the official [Hugging Face Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template). It connects the submitted report, implementation, machine-readable results, interactive figures, and an explicit evidence-upgrade protocol in one auditable publication surface.
 
 > [!IMPORTANT]
-> The central result is deliberately not simplified into a success claim. **Ablation B is the strongest classifier**, while **Hybrid B shows the strongest Grad-CAM++ localisation among three selected qualitative cases**. The study therefore indicates a classification–localisation trade-off; it does not establish that PFD–GSTE improves accuracy or eliminates shortcut learning.
+> **Ablation B is the strongest classifier**, while **Hybrid B shows the strongest Grad-CAM++ localisation among three selected qualitative cases**. The study therefore indicates a classification–localisation trade-off; it does not establish that PFD–GSTE improves accuracy or eliminates shortcut learning.
 
 ## What this work contributes
 
@@ -184,6 +184,6 @@ The site is generated as static output in `app/dist/`. Deployment is defined in 
 
 ## Attribution
 
-The publication interface is derived from the official [Hugging Face Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template), also used by [CorrSteer](https://seonglae-corrsteer.hf.space/). Template attribution, repository licences, third-party licences, evidence limitations, and the medical disclaimer must remain intact in redistributed versions.
+The publication interface is derived from the official [Hugging Face Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template). Template attribution, repository licences, third-party licences, evidence limitations, and the medical disclaimer must remain intact in redistributed versions.
 
 ---
