@@ -119,7 +119,7 @@ The localisation column records visual judgements for **three selected report ca
 The forward-looking [Evidence Upgrade Protocol](VALIDATION_PLAN.md) defines five fixed seeds, calibration artefacts, external-cohort eligibility, mask-based localisation metrics, release manifests, and publication gates. A limitation is upgraded only when the corresponding reproducible evidence exists.
 
 > [!CAUTION]
-> This is a final-year research project—not a peer-reviewed clinical study, diagnostic service, or medical device. Outputs must not be used for clinical decision-making.
+> This is a dissertation research project—not a peer-reviewed clinical study, diagnostic service, or medical device. Outputs must not be used for clinical decision-making.
 
 ## Research artefacts
 
