@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/public/hero-mri.webp" width="100%" alt="PFD–GSTE research article — brain tumour MRI classification with pathology-focused guidance">
+  <img src="app/public/hero-mri.webp" width="25%" alt="PFD–GSTE research article — brain tumour MRI classification with pathology-focused guidance">
 </p>
 
 <h1 align="center">Mitigating Shortcut Learning in Brain Tumour MRI Classification</h1>
@@ -187,7 +187,3 @@ The site is generated as static output in `app/dist/`. Deployment is defined in 
 The publication interface is derived from the official [Hugging Face Research Article Template](https://huggingface.co/spaces/tfrere/research-article-template), also used by [CorrSteer](https://seonglae-corrsteer.hf.space/). Template attribution, repository licences, third-party licences, evidence limitations, and the medical disclaimer must remain intact in redistributed versions.
 
 ---
-
-<p align="center">
-  <strong>Evidence first. Claims proportional to validation. Reproducibility by construction.</strong>
-</p>
