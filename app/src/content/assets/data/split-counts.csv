@@ -1,0 +1,4 @@
+split,glioma,meningioma,pituitary,no_tumour,total
+Train,1057,1064,1152,1080,4353
+Validation,264,267,288,270,1089
+Test,299,304,300,381,1284

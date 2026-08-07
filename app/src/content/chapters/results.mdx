@@ -1,0 +1,50 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+import Image from "../../components/Image.astro";
+import Note from "../../components/Note.astro";
+import Wide from "../../components/Wide.astro";
+import confusionMatrices from "../assets/image/confusion-matrices.webp";
+
+## Results
+
+All four models performed strongly on the fixed held-out set. Guidance, however, did not produce the best classification score.
+
+<Wide>
+  <HtmlEmbed
+    src="d3-model-performance.html"
+    title="Held-out performance explorer"
+    desc="Switch metrics to compare all four variants. Percentage axes are intentionally zoomed and labelled; the error view uses the absolute count from 1,284 test images."
+    id="model-performance"
+    data="model-metrics.csv"
+    downloadable
+  />
+</Wide>
+
+| Model | Params | Accuracy | Macro-F1 | Loss | Specificity | $\kappa$ | MCC | Errors | Best epoch |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Hybrid A | 26.68M | 0.9875 | **0.9875** | 0.0803 | 0.9959 | 0.9833 | 0.9833 | 16 | 43 |
+| Hybrid B | 26.58M | 0.9852 | 0.9849 | 0.0753 | 0.9952 | 0.9802 | 0.9803 | 19 | 14 |
+| Ablation A | 26.68M | 0.9875 | 0.9873 | 0.0847 | 0.9959 | 0.9833 | 0.9834 | 16 | 30 |
+| **Ablation B** | 26.58M | **0.9922** | **0.9920** | **0.0668** | **0.9975** | **0.9896** | **0.9896** | **10** | 42 |
+
+### Within-family ablation result
+
+- **A-family:** Hybrid A and Ablation A tied on accuracy. Hybrid A was higher by 0.0002 in macro-F1 and lower by 0.0044 in test loss.
+- **B-family:** Hybrid B was lower than Ablation B by **0.70 percentage points in accuracy** and **0.71 percentage points in macro-F1**, with nine additional errors.
+
+<Note title="Key finding" emoji="→" variant="success">
+Ablation B is the strongest classifier in this evaluation. Any account that presents Hybrid B or PFD–GSTE as the accuracy winner would contradict the reported experiment.
+</Note>
+
+<Wide>
+  <Image
+    src={confusionMatrices}
+    alt="Held-out confusion matrices for Hybrid A, Hybrid B, Ablation A, and Ablation B."
+    caption="<strong>Held-out confusion matrices.</strong> Report order: Hybrid A, Hybrid B, Ablation A, Ablation B. Remaining mistakes primarily occur at tumour-subtype boundaries."
+    zoomable
+    downloadable
+  />
+</Wide>
+
+### Benchmark context, not a state-of-the-art claim
+
+The report found that this model family compares favourably with the reviewed four-class studies in its chosen benchmark setting. That numerical comparison is not equivalent to a definitive state-of-the-art result: prior papers differ in preprocessing, duplicate handling, split policy, augmentation, checkpoint selection, and reporting detail. External validation and repeated-seed analysis would be required before making stronger generalisation claims [@varoquaux2022failures].

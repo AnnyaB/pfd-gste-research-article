@@ -1,0 +1,323 @@
+<div class="d3-uncertainty"></div>
+<style>
+  .d3-uncertainty {
+    position: relative;
+    width: 100%;
+    min-height: 420px;
+    color: var(--text-color);
+    font-family: var(--default-font-family, ui-sans-serif, system-ui);
+  }
+  .d3-uncertainty * { box-sizing: border-box; }
+  .d3-uncertainty svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .d3-uncertainty .axes path,
+  .d3-uncertainty .axes line { stroke: var(--axis-color); }
+  .d3-uncertainty .axes text {
+    fill: var(--tick-color);
+    font: 10px var(--font-mono, monospace);
+  }
+  .d3-uncertainty .grid line {
+    stroke: var(--grid-color);
+    stroke-dasharray: 3 5;
+  }
+  .d3-uncertainty .grid path { display: none; }
+  .d3-uncertainty .axis-label {
+    fill: var(--text-color);
+    font-size: 11px;
+    font-weight: 650;
+  }
+  .d3-uncertainty .bar {
+    cursor: pointer;
+    transition: filter 150ms ease;
+  }
+  .d3-uncertainty .bar:hover,
+  .d3-uncertainty .bar:focus {
+    filter: brightness(1.08) drop-shadow(0 2px 7px color-mix(in srgb, var(--primary-color) 30%, transparent));
+    outline: none;
+  }
+  .d3-uncertainty .value-label {
+    fill: var(--text-color);
+    font: 700 10px var(--font-mono, monospace);
+  }
+  .d3-uncertainty .baseline-label {
+    fill: var(--muted-color);
+    font: 600 9px var(--font-mono, monospace);
+  }
+  .d3-uncertainty .legend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .d3-uncertainty .legend-title {
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .d3-uncertainty .legend .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .d3-uncertainty .legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-color);
+    font-size: 12px;
+  }
+  .d3-uncertainty .legend .swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+  }
+  .d3-uncertainty .note {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border-left: 3px solid var(--danger-color);
+    color: var(--muted-color);
+    background: color-mix(in srgb, var(--danger-color) 7%, var(--surface-bg));
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .d3-uncertainty .d3-tooltip {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 0;
+    max-width: 270px;
+    padding: 9px 11px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    background: var(--surface-bg);
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    font-size: 11px;
+    line-height: 1.45;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-9999px,-9999px);
+    transition: opacity 120ms ease;
+  }
+  .d3-uncertainty .d3-tooltip strong { display: block; margin-bottom: 3px; }
+  .d3-uncertainty .error {
+    padding: 12px;
+    color: var(--danger-color);
+    white-space: pre-wrap;
+  }
+  @media (max-width: 620px) {
+    .d3-uncertainty { min-height: 470px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .d3-uncertainty .bar,
+    .d3-uncertainty .d3-tooltip { transition: none; }
+  }
+</style>
+<script>
+  (() => {
+    const ensureD3 = (callback) => {
+      if (window.d3 && typeof window.d3.select === "function") return callback();
+      let script = document.getElementById("d3-cdn-script");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "d3-cdn-script";
+        script.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        document.head.appendChild(script);
+      }
+      const ready = () => {
+        if (window.d3 && typeof window.d3.select === "function") callback();
+      };
+      script.addEventListener("load", ready, { once: true });
+      if (window.d3) ready();
+    };
+
+    const bootstrap = () => {
+      const scriptElement = document.currentScript;
+      let container = scriptElement ? scriptElement.previousElementSibling.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains("d3-uncertainty"))) {
+        const candidates = Array.from(document.querySelectorAll(".d3-uncertainty"))
+          .filter((element) => !(element.dataset && element.dataset.mounted === "true"));
+        container = candidates[candidates.length - 1] || null;
+      }
+      if (!container || container.dataset.mounted === "true") return;
+      container.dataset.mounted = "true";
+
+      let mountElement = container;
+      while (mountElement && !mountElement.getAttribute?.("data-datafiles")) {
+        mountElement = mountElement.parentElement;
+      }
+      let providedData = null;
+      try {
+        const attribute = mountElement && mountElement.getAttribute
+          ? mountElement.getAttribute("data-datafiles")
+          : null;
+        if (attribute && attribute.trim()) {
+          providedData = attribute.trim().startsWith("[")
+            ? JSON.parse(attribute)
+            : attribute.trim();
+        }
+      } catch (_) {}
+      const prefixData = (path) =>
+        typeof path === "string" && path && !path.includes("/") ? "/data/" + path : path;
+      const paths = providedData
+        ? (Array.isArray(providedData) ? providedData : [providedData]).map(prefixData)
+        : [
+            "/data/uncertainty-shared-error.csv",
+            "./assets/data/uncertainty-shared-error.csv",
+            "../assets/data/uncertainty-shared-error.csv"
+          ];
+      const fetchFirstAvailable = async (candidates) => {
+        for (const path of candidates) {
+          try {
+            const response = await fetch(path, { cache: "no-cache" });
+            if (response.ok) return await response.text();
+          } catch (_) {}
+        }
+        throw new Error("Uncertainty CSV not found.");
+      };
+
+      const palette = window.ColorPalettes && window.ColorPalettes.getColors
+        ? window.ColorPalettes.getColors("categorical", 2)
+        : ["var(--primary-color)", "var(--info-color)"];
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "d3-tooltip";
+      const tooltipInner = document.createElement("div");
+      tooltipInner.className = "d3-tooltip__inner";
+      tooltip.appendChild(tooltipInner);
+      container.appendChild(tooltip);
+
+      const svg = d3.select(container).append("svg")
+        .attr("aria-label", "Mean MC Dropout confidence on a shared misclassification");
+      const rootGroup = svg.append("g");
+      const gridGroup = rootGroup.append("g").attr("class", "grid");
+      const xAxisGroup = rootGroup.append("g").attr("class", "axes x-axis");
+      const yAxisGroup = rootGroup.append("g").attr("class", "axes y-axis");
+      const barsGroup = rootGroup.append("g").attr("class", "bars");
+      const labelsGroup = rootGroup.append("g").attr("class", "labels");
+      const xLabel = svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle");
+
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      legend.innerHTML =
+        '<div class="legend-title">Legend</div>' +
+        '<div class="items">' +
+        '<span class="item"><span class="swatch"></span><span>Guided PFD–GSTE</span></span>' +
+        '<span class="item"><span class="swatch"></span><span>Unguided ablation</span></span>' +
+        '</div>';
+      const swatches = legend.querySelectorAll(".swatch");
+      swatches[0].style.background = palette[0];
+      swatches[1].style.background = palette[1];
+      container.appendChild(legend);
+
+      const note = document.createElement("p");
+      note.className = "note";
+      note.innerHTML = '<strong>Shared failure:</strong> every model predicted meningioma for this pituitary image. Values are mean confidences over 20 stochastic passes—not ECE, Brier score, or a reliability curve.';
+      container.appendChild(note);
+
+      let data = [];
+      const showTooltip = (event, row) => {
+        tooltipInner.innerHTML =
+          '<strong>' + row.model + '</strong>' +
+          'Mean confidence ' + d3.format(".2%")(row.mean_confidence) + '<br>' +
+          row.true_class + ' → ' + row.prediction + '<br>' +
+          row.passes + ' MC Dropout passes';
+        const pointer = d3.pointer(event, container);
+        tooltip.style.opacity = "1";
+        tooltip.style.transform = "translate(" + Math.round(pointer[0] + 12) + "px," + Math.round(pointer[1] + 12) + "px)";
+      };
+      const hideTooltip = () => {
+        tooltip.style.opacity = "0";
+        tooltip.style.transform = "translate(-9999px,-9999px)";
+      };
+
+      const render = () => {
+        if (!data.length) return;
+        const width = container.clientWidth || 800;
+        const compact = width < 620;
+        const height = Math.max(285, Math.round(width / 2.45));
+        const margin = { top: 24, right: compact ? 56 : 78, bottom: 58, left: compact ? 86 : 112 };
+        const innerWidth = Math.max(180, width - margin.left - margin.right);
+        const innerHeight = Math.max(180, height - margin.top - margin.bottom);
+
+        svg.attr("viewBox", "0 0 " + width + " " + height).attr("height", height);
+        rootGroup.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        const x = d3.scaleLinear().domain([0.90, 1.00]).range([0, innerWidth]);
+        const y = d3.scaleBand()
+          .domain(data.map((row) => row.model))
+          .range([0, innerHeight])
+          .padding(0.28);
+        const familyColor = (row) => row.guidance === "guided" ? palette[0] : palette[1];
+
+        gridGroup.call(
+          d3.axisBottom(x).ticks(compact ? 4 : 6).tickSize(innerHeight).tickFormat("")
+        );
+        xAxisGroup
+          .attr("transform", "translate(0," + innerHeight + ")")
+          .call(d3.axisBottom(x).ticks(compact ? 4 : 6).tickFormat(d3.format(".0%")));
+        yAxisGroup.call(d3.axisLeft(y).tickSizeOuter(0));
+        xLabel
+          .attr("x", margin.left + innerWidth / 2)
+          .attr("y", height - 10)
+          .text("Mean confidence on shared wrong prediction (20 MC passes)");
+
+        barsGroup.selectAll("rect")
+          .data(data, (row) => row.model)
+          .join("rect")
+          .attr("class", "bar")
+          .attr("tabindex", 0)
+          .attr("role", "img")
+          .attr("aria-label", (row) => row.model + ", " + d3.format(".2%")(row.mean_confidence) + " mean confidence, wrong meningioma prediction")
+          .attr("x", 0)
+          .attr("y", (row) => y(row.model))
+          .attr("width", (row) => Math.max(1, x(row.mean_confidence) - x(0.90)))
+          .attr("height", y.bandwidth())
+          .attr("rx", Math.min(5, y.bandwidth() / 4))
+          .attr("fill", familyColor)
+          .on("pointerenter pointermove", showTooltip)
+          .on("pointerleave blur", hideTooltip)
+          .on("focus", (event, row) => showTooltip(event, row));
+
+        labelsGroup.selectAll("text")
+          .data(data, (row) => row.model)
+          .join("text")
+          .attr("class", "value-label")
+          .attr("x", (row) => x(row.mean_confidence) + 7)
+          .attr("y", (row) => y(row.model) + y.bandwidth() / 2)
+          .attr("dy", "0.35em")
+          .text((row) => d3.format(".2%")(row.mean_confidence));
+      };
+
+      fetchFirstAvailable(paths)
+        .then((csvText) => {
+          data = d3.csvParse(csvText, (row) => ({
+            model: row.model,
+            guidance: row.guidance,
+            mean_confidence: +row.mean_confidence,
+            true_class: row.true_class,
+            prediction: row.prediction,
+            passes: +row.passes
+          })).filter((row) => row.model && Number.isFinite(row.mean_confidence));
+          if (!data.length) throw new Error("The uncertainty CSV contained no valid rows.");
+          render();
+          const observer = new ResizeObserver(() => render());
+          observer.observe(container);
+        })
+        .catch((error) => {
+          const errorElement = document.createElement("pre");
+          errorElement.className = "error";
+          errorElement.textContent = "Unable to render the uncertainty chart: " + error.message;
+          container.appendChild(errorElement);
+        });
+    };
+
+    ensureD3(bootstrap);
+  })();
+</script>

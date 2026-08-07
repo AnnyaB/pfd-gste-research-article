@@ -1,0 +1,116 @@
+import Accordion from "../../components/Accordion.astro";
+import Image from "../../components/Image.astro";
+import Note from "../../components/Note.astro";
+import Stack from "../../components/Stack.astro";
+import Wide from "../../components/Wide.astro";
+import originalSplits from "../assets/image/original-splits.webp";
+import classDistribution from "../assets/image/class-distribution.webp";
+import rawAudit from "../assets/image/raw-audit.webp";
+import finalSplits from "../assets/image/final-splits.webp";
+import fullTraining from "../assets/image/full-training.webp";
+import ablationTraining from "../assets/image/ablation-training.webp";
+
+## Leakage-Safe Benchmark
+
+The experiment uses the public four-class Brain Tumor MRI Dataset [@nickparvar2021dataset]. Before training, every discovered file was read as bytes and hashed with SHA1. Exact duplicate hashes were grouped across the original Kaggle directories.
+
+When an exact duplicate crossed the original Training/Testing boundary, the Testing copy was retained and the Training copy removed. This policy protects the held-out boundary instead of allowing visually identical files to appear on both sides of evaluation.
+
+$$
+7{,}023\ \text{raw files}
+\; - \;
+297\ \text{exact duplicates}
+\; = \;
+6{,}726\ \text{unique images}.
+$$
+
+### Fixed split composition
+
+The cleaned Kaggle Training partition was divided into stratified train and validation subsets using an 80/20 split. The cleaned Kaggle Testing partition remained untouched as the held-out test set.
+
+| Split | Glioma | Meningioma | Pituitary | No tumour | Total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Train | 1,057 | 1,064 | 1,152 | 1,080 | **4,353** |
+| Validation | 264 | 267 | 288 | 270 | **1,089** |
+| Test | 299 | 304 | 300 | 381 | **1,284** |
+
+<Wide>
+  <Image
+    src={finalSplits}
+    alt="Bar charts showing class counts in the final training, validation, and held-out test splits."
+    caption="<strong>Final data split.</strong> Class composition after exact deduplication, an 80/20 stratified train-validation split, and preservation of Kaggle Testing as the held-out test set."
+    zoomable
+    downloadable
+  />
+</Wide>
+
+<Accordion>
+  <strong slot="title">Inspect the original split, deduplicated balance, and raw-image audit</strong>
+  <Stack layout="2-column" gap="large">
+    <Image
+      src={originalSplits}
+      alt="Original Kaggle training and testing class counts before duplicate removal."
+      caption="Original Kaggle split composition."
+      zoomable
+      downloadable
+    />
+    <Image
+      src={classDistribution}
+      alt="Class distribution after exact duplicate removal."
+      caption="Class balance after deduplication."
+      zoomable
+      downloadable
+    />
+  </Stack>
+  <Image
+    src={rawAudit}
+    alt="Representative brain MRI images inspected during the rule-based raw-image audit."
+    caption="Representative raw-image audit panel. The report recorded zero unreadable, too-dark, too-bright, or low-contrast files under its rule-based checks."
+    zoomable
+    downloadable
+  />
+</Accordion>
+
+## Training and Evaluation Protocol
+
+All four variants used the same core optimisation policy:
+
+| Component | Setting |
+| --- | --- |
+| Optimiser | AdamW |
+| CNN learning rate | $10^{-4}$ |
+| Transformer and fusion learning rate | $5\times10^{-4}$ |
+| Weight decay | 0.01 |
+| Objective | Cross-entropy with label smoothing 0.05 |
+| Schedule | Cosine annealing, $\eta_{\min}=10^{-6}$ |
+| Batch size | 32 |
+| Maximum epochs | 100 |
+| CNN warm-up | Frozen for first 5 epochs |
+| Early stopping | Validation macro-F1, patience 10 |
+| Gradient clipping | 1.0 |
+| Random seed | 42 |
+
+Checkpoint selection used validation macro-F1 only. Each chosen checkpoint was then evaluated once on the fixed 1,284-image test set.
+
+<Wide>
+  <Stack layout="2-column" gap="large">
+    <Image
+      src={fullTraining}
+      alt="Training and validation loss, accuracy, and macro-F1 curves for Hybrid A and Hybrid B."
+      caption="Guided-model learning curves. Hybrid B reached its best validation macro-F1 at epoch 14."
+      zoomable
+      downloadable
+    />
+    <Image
+      src={ablationTraining}
+      alt="Training and validation loss, accuracy, and macro-F1 curves for Ablation A and Ablation B."
+      caption="Ablation learning curves. Late fluctuations support validation-based early stopping rather than final-epoch selection."
+      zoomable
+      downloadable
+    />
+  </Stack>
+</Wide>
+
+<Note title="Reproducibility caveat" emoji="⚠️" variant="danger">
+B-family training used <code>drop_last=True</code>, whereas A-family training used <code>drop_last=False</code>. cuDNN benchmarking was enabled and strict deterministic execution was not enforced. Exact reruns may therefore vary, and within-family comparisons are the cleanest.
+</Note>

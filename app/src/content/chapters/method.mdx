@@ -1,0 +1,91 @@
+import Glossary from "../../components/Glossary.astro";
+import Image from "../../components/Image.astro";
+import Note from "../../components/Note.astro";
+import Stack from "../../components/Stack.astro";
+import Wide from "../../components/Wide.astro";
+import hybridA from "../assets/image/hybrid-a-architecture.webp";
+import hybridB from "../assets/image/hybrid-b-architecture.webp";
+
+## The PFD–GSTE Method
+
+The model family combines a ResNet50V2 convolutional branch with a rotation-aware Vision Transformer branch. Residual CNNs provide strong local feature extraction [@he2016identity], while Vision Transformers model long-range relationships through token interactions [@dosovitskiy2021vit]. The transformer design follows rotation-aware ideas where applicable from Krishnan et al. [@krishnan2024rvit].
+
+The project adds two experimental modules:
+
+- <Glossary term="PFD" definition="Pathology-Focused Disentanglement: a learned one-channel spatial gate inferred from the CNN feature map." /> estimates a soft spatial mask.
+- <Glossary term="GSTE" definition="Guided Semantic Token Evolution: mean-normalised spatial guidance applied to transformer-facing feature or patch tokens." /> transfers that spatial preference into the token pathway.
+
+The terminology is project-specific. The design is motivated by pathology-emphasis, hybrid CNN–Transformer, and token-selection literature [@xia2020pathology; @rao2021dynamicvit]; it should not be read as a claim that an established clinical concept has been reproduced.
+
+### Stage 1: soft spatial gating
+
+Let $F \in \mathbb{R}^{C \times H \times W}$ denote the CNN feature map and let $g(\cdot)$ be a learned mask head. PFD computes
+
+$$
+m = \sigma(g(F)), \qquad \widetilde{F} = F \odot m,
+$$
+
+where $m \in [0,1]^{1 \times H \times W}$ is a differentiable spatial gate and $\odot$ denotes broadcast element-wise multiplication.
+
+Plain-language interpretation: the network learns a continuous spatial preference map rather than receiving a manual tumour segmentation mask.
+
+### Stage 2: mean-normalised token guidance
+
+The mask is resized to the token grid and normalised to preserve its mean scale:
+
+$$
+\alpha =
+\frac{\operatorname{Resize}(m)}
+{\operatorname{mean}(\operatorname{Resize}(m)) + \varepsilon},
+\qquad
+\widetilde{T} = T \odot \alpha.
+$$
+
+Variant A applies this mechanism to a fixed $7\times7$ CNN feature grid, giving 49 tokens. Variant B begins with $14\times14$ raw-image patches, giving 196 tokens, and can use concentration-aware weighted pooling toward a minimum $7\times7$ spatial side.
+
+### Stage 3: late fusion
+
+The CNN and transformer summaries remain separate until the classifier:
+
+$$
+z = [z_{\mathrm{cnn}};z_{\mathrm{vit}}],
+\qquad
+h = \operatorname{ReLU}(W_f z + b_f),
+\qquad
+\widehat{y} = W_o\!\left(\operatorname{Dropout}(h)\right)+b_o.
+$$
+
+This equation is the late-fusion formulation reported in the FYP.
+
+## Two Guided Variants
+
+<Wide>
+  <Stack layout="2-column" gap="large">
+    <Image
+      src={hybridA}
+      alt="Hybrid A architecture showing ResNet50V2, PFD guidance, 49 CNN feature tokens, RViT processing, and late fusion."
+      caption="<strong>Hybrid A.</strong> The learned mask guides the transformer-facing feature tokens; the CNN descriptor remains ungated."
+      zoomable
+      downloadable
+    />
+    <Image
+      src={hybridB}
+      alt="Hybrid B architecture showing PFD-gated CNN evidence, 196 raw-image patch tokens, GSTE guidance, optional dynamic weighted pooling, RViT processing, and late fusion."
+      caption="<strong>Hybrid B.</strong> The stronger intervention gates the CNN descriptor and guides raw-image patch tokens."
+      zoomable
+      downloadable
+    />
+  </Stack>
+</Wide>
+
+| Property | Hybrid A | Hybrid B |
+| --- | --- | --- |
+| Initial transformer tokens | 49 CNN feature tokens | 196 raw-image patch tokens |
+| CNN descriptor | Ungated | PFD-gated |
+| Guidance reach | Transformer-facing pathway | CNN and transformer pathways |
+| Token count | Fixed | Optional concentration-aware pooling |
+| Trainable parameters | 26.68M | 26.58M |
+
+<Note title="Interpretation discipline" emoji="🔬" variant="neutral">
+Because A and B differ in token source and guidance reach, cross-family comparisons are not clean estimates of one isolated design change. The strongest causal comparisons are Hybrid A versus Ablation A and Hybrid B versus Ablation B.
+</Note>

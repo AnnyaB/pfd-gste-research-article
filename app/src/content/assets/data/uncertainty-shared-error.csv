@@ -1,0 +1,5 @@
+model,mean_confidence,passes,prediction,true_class
+Hybrid A,0.9692,20,meningioma,pituitary
+Ablation A,0.9592,20,meningioma,pituitary
+Hybrid B,0.9869,20,meningioma,pituitary
+Ablation B,0.9632,20,meningioma,pituitary

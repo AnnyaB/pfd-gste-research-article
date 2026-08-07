@@ -1,0 +1,368 @@
+<div class="d3-classification-localisation"></div>
+<style>
+  .d3-classification-localisation {
+    position: relative;
+    width: 100%;
+    min-height: 475px;
+    color: var(--text-color);
+    font-family: var(--default-font-family, ui-sans-serif, system-ui);
+  }
+  .d3-classification-localisation * { box-sizing: border-box; }
+  .d3-classification-localisation svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .d3-classification-localisation .axes path,
+  .d3-classification-localisation .axes line { stroke: var(--axis-color); }
+  .d3-classification-localisation .axes text {
+    fill: var(--tick-color);
+    font: 10px var(--font-mono, monospace);
+  }
+  .d3-classification-localisation .grid line {
+    stroke: var(--grid-color);
+    stroke-dasharray: 3 5;
+  }
+  .d3-classification-localisation .grid path { display: none; }
+  .d3-classification-localisation .axis-label {
+    fill: var(--text-color);
+    font-size: 11px;
+    font-weight: 650;
+  }
+  .d3-classification-localisation .point-label {
+    fill: var(--text-color);
+    stroke: var(--surface-bg);
+    stroke-width: 4px;
+    paint-order: stroke;
+    font-size: 10px;
+    font-weight: 650;
+  }
+  .d3-classification-localisation .point {
+    cursor: pointer;
+    transition: filter 150ms ease, transform 150ms ease;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .d3-classification-localisation .point:hover,
+  .d3-classification-localisation .point:focus {
+    filter: brightness(1.08) drop-shadow(0 2px 6px color-mix(in srgb, var(--primary-color) 35%, transparent));
+    transform: scale(1.15);
+    outline: none;
+  }
+  .d3-classification-localisation .legend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .d3-classification-localisation .legend-title {
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .d3-classification-localisation .legend .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .d3-classification-localisation .legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-color);
+    font-size: 12px;
+  }
+  .d3-classification-localisation .legend .swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+  }
+  .d3-classification-localisation .detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.35fr;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    background: var(--surface-bg);
+  }
+  .d3-classification-localisation .detail span,
+  .d3-classification-localisation .detail strong { display: block; }
+  .d3-classification-localisation .detail span {
+    color: var(--muted-color);
+    font: 600 8px/1 var(--font-mono, monospace);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  .d3-classification-localisation .detail strong {
+    margin-top: 5px;
+    font-size: 11px;
+  }
+  .d3-classification-localisation .note {
+    margin: 11px 0 0;
+    color: var(--muted-color);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .d3-classification-localisation .d3-tooltip {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 0;
+    max-width: 260px;
+    padding: 9px 11px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    background: var(--surface-bg);
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    font-size: 11px;
+    line-height: 1.45;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-9999px,-9999px);
+    transition: opacity 120ms ease;
+  }
+  .d3-classification-localisation .d3-tooltip strong { display: block; margin-bottom: 3px; }
+  .d3-classification-localisation .error {
+    padding: 12px;
+    color: var(--danger-color);
+    white-space: pre-wrap;
+  }
+  @media (max-width: 620px) {
+    .d3-classification-localisation { min-height: 540px; }
+    .d3-classification-localisation .detail { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .d3-classification-localisation .point,
+    .d3-classification-localisation .d3-tooltip { transition: none; }
+  }
+</style>
+<script>
+  (() => {
+    const ensureD3 = (callback) => {
+      if (window.d3 && typeof window.d3.select === "function") return callback();
+      let script = document.getElementById("d3-cdn-script");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "d3-cdn-script";
+        script.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        document.head.appendChild(script);
+      }
+      const ready = () => {
+        if (window.d3 && typeof window.d3.select === "function") callback();
+      };
+      script.addEventListener("load", ready, { once: true });
+      if (window.d3) ready();
+    };
+
+    const bootstrap = () => {
+      const scriptElement = document.currentScript;
+      let container = scriptElement ? scriptElement.previousElementSibling.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains("d3-classification-localisation"))) {
+        const candidates = Array.from(document.querySelectorAll(".d3-classification-localisation"))
+          .filter((element) => !(element.dataset && element.dataset.mounted === "true"));
+        container = candidates[candidates.length - 1] || null;
+      }
+      if (!container || container.dataset.mounted === "true") return;
+      container.dataset.mounted = "true";
+
+      let mountElement = container;
+      while (mountElement && !mountElement.getAttribute?.("data-datafiles")) {
+        mountElement = mountElement.parentElement;
+      }
+      let providedData = null;
+      try {
+        const attribute = mountElement && mountElement.getAttribute
+          ? mountElement.getAttribute("data-datafiles")
+          : null;
+        if (attribute && attribute.trim()) {
+          providedData = attribute.trim().startsWith("[")
+            ? JSON.parse(attribute)
+            : attribute.trim();
+        }
+      } catch (_) {}
+      const prefixData = (path) =>
+        typeof path === "string" && path && !path.includes("/") ? "/data/" + path : path;
+      const paths = providedData
+        ? (Array.isArray(providedData) ? providedData : [providedData]).map(prefixData)
+        : [
+            "/data/classification-localisation.csv",
+            "./assets/data/classification-localisation.csv",
+            "../assets/data/classification-localisation.csv"
+          ];
+      const fetchFirstAvailable = async (candidates) => {
+        for (const path of candidates) {
+          try {
+            const response = await fetch(path, { cache: "no-cache" });
+            if (response.ok) return await response.text();
+          } catch (_) {}
+        }
+        throw new Error("Classification-localisation CSV not found.");
+      };
+
+      const palette = window.ColorPalettes && window.ColorPalettes.getColors
+        ? window.ColorPalettes.getColors("categorical", 2)
+        : ["var(--primary-color)", "var(--info-color)"];
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "d3-tooltip";
+      const tooltipInner = document.createElement("div");
+      tooltipInner.className = "d3-tooltip__inner";
+      tooltip.appendChild(tooltipInner);
+      container.appendChild(tooltip);
+
+      const svg = d3.select(container).append("svg")
+        .attr("aria-label", "Classification accuracy versus qualitative Grad-CAM++ localisation chart");
+      const rootGroup = svg.append("g");
+      const gridX = rootGroup.append("g").attr("class", "grid");
+      const gridY = rootGroup.append("g").attr("class", "grid");
+      const xAxis = rootGroup.append("g").attr("class", "axes x-axis");
+      const yAxis = rootGroup.append("g").attr("class", "axes y-axis");
+      const marks = rootGroup.append("g").attr("class", "marks");
+      const labels = rootGroup.append("g").attr("class", "labels");
+      const xLabel = svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle");
+      const yLabel = svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle");
+
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      legend.innerHTML =
+        '<div class="legend-title">Legend</div>' +
+        '<div class="items">' +
+        '<span class="item"><span class="swatch"></span><span>Guided PFD–GSTE · circle</span></span>' +
+        '<span class="item"><span class="swatch"></span><span>Unguided ablation · square</span></span>' +
+        '</div>';
+      const swatches = legend.querySelectorAll(".swatch");
+      swatches[0].style.background = palette[0];
+      swatches[1].style.background = palette[1];
+      container.appendChild(legend);
+
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      container.appendChild(detail);
+      const note = document.createElement("p");
+      note.className = "note";
+      note.textContent = "The vertical coordinate is a qualitative count from three report-selected examples. It is not Dice, IoU, causal faithfulness, or a full-test-set localisation estimate.";
+      container.appendChild(note);
+
+      let data = [];
+      let selectedModel = "Hybrid B";
+      const showDetail = (row) => {
+        selectedModel = row.model;
+        detail.innerHTML =
+          '<div><span>Model</span><strong>' + row.model + '</strong></div>' +
+          '<div><span>Test accuracy</span><strong>' + d3.format(".2%")(row.accuracy) + '</strong></div>' +
+          '<div><span>Qualitative localisation</span><strong>' + row.correct_gradcam_pp_cases + ' / ' + row.total_selected_cases + ' · ' + row.note + '</strong></div>';
+      };
+      const showTooltip = (event, row) => {
+        tooltipInner.innerHTML =
+          '<strong>' + row.model + '</strong>' +
+          'Test accuracy ' + d3.format(".2%")(row.accuracy) + '<br>' +
+          'Correct GC++ judgements ' + row.correct_gradcam_pp_cases + ' / ' + row.total_selected_cases;
+        const pointer = d3.pointer(event, container);
+        tooltip.style.opacity = "1";
+        tooltip.style.transform = "translate(" + Math.round(pointer[0] + 12) + "px," + Math.round(pointer[1] + 12) + "px)";
+      };
+      const hideTooltip = () => {
+        tooltip.style.opacity = "0";
+        tooltip.style.transform = "translate(-9999px,-9999px)";
+      };
+
+      const render = () => {
+        if (!data.length) return;
+        const width = container.clientWidth || 800;
+        const compact = width < 620;
+        const height = Math.max(335, Math.round(width / 2.15));
+        const margin = { top: 24, right: compact ? 26 : 54, bottom: 58, left: compact ? 62 : 80 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        const x = d3.scaleLinear().domain([0.984, 0.994]).range([0, innerWidth]);
+        const y = d3.scaleLinear().domain([0, 3]).range([innerHeight, 0]);
+        svg.attr("width", width).attr("height", height);
+        rootGroup.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        gridX.attr("transform", "translate(0," + innerHeight + ")")
+          .call(d3.axisBottom(x).ticks(5).tickSize(-innerHeight).tickFormat(() => ""));
+        gridY.call(d3.axisLeft(y).ticks(3).tickSize(-innerWidth).tickFormat(() => ""));
+        xAxis.attr("transform", "translate(0," + innerHeight + ")")
+          .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".1%")));
+        yAxis.call(d3.axisLeft(y).ticks(3).tickFormat(d3.format("d")));
+
+        const symbol = d3.symbol().size(compact ? 190 : 240)
+          .type((row) => row.guided ? d3.symbolCircle : d3.symbolSquare);
+        marks.selectAll("path.point")
+          .data(data, (row) => row.model)
+          .join("path")
+          .attr("class", "point")
+          .attr("tabindex", 0)
+          .attr("role", "button")
+          .attr("aria-label", (row) => row.model + ", test accuracy " + d3.format(".2%")(row.accuracy) + ", " + row.correct_gradcam_pp_cases + " of 3 correct qualitative Grad-CAM++ judgements")
+          .attr("d", symbol)
+          .attr("transform", (row) => "translate(" + x(row.accuracy) + "," + y(row.correct_gradcam_pp_cases) + ")")
+          .attr("fill", (row) => row.guided ? palette[0] : palette[1])
+          .attr("stroke", "var(--surface-bg)")
+          .attr("stroke-width", 2)
+          .on("mouseenter", showTooltip)
+          .on("mousemove", showTooltip)
+          .on("mouseleave", hideTooltip)
+          .on("focus", (event, row) => showDetail(row))
+          .on("click", (event, row) => showDetail(row));
+
+        const offsets = {
+          "Hybrid A": [12, -12, "start"],
+          "Hybrid B": [0, -15, "middle"],
+          "Ablation A": [0, 27, "middle"],
+          "Ablation B": [0, -15, "middle"]
+        };
+        labels.selectAll("text.point-label")
+          .data(data, (row) => row.model)
+          .join("text")
+          .attr("class", "point-label")
+          .attr("x", (row) => x(row.accuracy) + offsets[row.model][0])
+          .attr("y", (row) => y(row.correct_gradcam_pp_cases) + offsets[row.model][1])
+          .attr("text-anchor", (row) => offsets[row.model][2])
+          .text((row) => compact ? row.model.replace("Ablation", "Abl.") : row.model);
+
+        xLabel.attr("x", margin.left + innerWidth / 2).attr("y", height - 7)
+          .text("Held-out test accuracy (%)");
+        yLabel.attr("transform", "translate(16," + (margin.top + innerHeight / 2) + ") rotate(-90)")
+          .text("Correct GC++ judgements (n=3 cases)");
+        showDetail(data.find((row) => row.model === selectedModel) || data[0]);
+      };
+
+      fetchFirstAvailable(paths)
+        .then((text) => {
+          data = d3.csvParse(text, (row) => ({
+            ...row,
+            guided: String(row.guided).toLowerCase() === "true",
+            accuracy: +row.accuracy,
+            correct_gradcam_pp_cases: +row.correct_gradcam_pp_cases,
+            total_selected_cases: +row.total_selected_cases
+          }));
+          render();
+          if (window.ResizeObserver) {
+            const observer = new ResizeObserver(render);
+            observer.observe(container);
+          } else {
+            window.addEventListener("resize", render);
+          }
+        })
+        .catch((error) => {
+          const message = document.createElement("pre");
+          message.className = "error";
+          message.textContent = "Unable to load the verified localisation audit: " + error.message;
+          container.appendChild(message);
+        });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => ensureD3(bootstrap), { once: true });
+    } else {
+      ensureD3(bootstrap);
+    }
+  })();
+</script>

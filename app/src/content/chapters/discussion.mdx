@@ -1,0 +1,65 @@
+import Note from "../../components/Note.astro";
+
+## Limitations
+
+The study’s strongest value is that its boundaries are inspectable.
+
+1. **No external validation.** One aggregated Kaggle benchmark cannot establish robustness across hospitals, scanners, sequences, patient populations, or clinical workflows.
+2. **No ground-truth tumour masks.** Localisation is qualitative and case-based; there is no full-test-set overlap metric.
+3. **No formal calibration analysis.** Twenty MC Dropout passes provide stochastic summaries, not proof of calibrated uncertainty.
+4. **Architecture and loader differences remain.** A and B differ in tokenisation and guidance reach, while their loaders differ in `drop_last`.
+5. **Single 2D slices.** Tumour subtype discrimination may require multi-slice, multi-sequence, volumetric, or histopathological context.
+6. **Single seeded training run per variant.** Repeated seeds and confidence intervals are needed to separate stable effects from optimisation variance.
+7. **No clinical claim.** The system is an experimental research prototype and must not be used for diagnosis, patient management, or treatment.
+
+<Note title="Scientific status" emoji="🧭" variant="neutral">
+The results support a benchmark-level conclusion: guidance may improve qualitative evidence focus without improving the best classification score. They do not establish clinical utility, universal shortcut robustness, or superiority over all published methods.
+</Note>
+
+## Evidence Readiness
+
+The public implementation already supports a strong reproducibility record, but a polished website is not a substitute for missing experiments. The table below separates what is verified from the evidence required before each claim can be strengthened.
+
+| Dimension | Verified now | Completion gate |
+| --- | --- | --- |
+| Research integrity | Exact reported values, negative ablation outcomes, authorship, and limitations are preserved | Keep all claims traceable to report, code, or released artefacts |
+| Open artefacts | Public code, checkpoints, model cards, PyPI package, report, and machine-readable article data | Publish this article repository with a versioned release and build check |
+| Statistical robustness | One seeded training run per variant | Run at least five matched seeds per variant; report mean, standard deviation, 95% confidence intervals, and paired within-family deltas |
+| Fair comparison | Guided variants have same-family ablations | Use the same loader policy, preprocessing manifest, checkpoint rule, and deterministic settings in the repeated-seed rerun |
+| Calibration | Twenty-pass MC Dropout summaries for selected examples | Archive validation and test probabilities; report NLL, multiclass Brier score, ECE, reliability diagrams, and validation-fitted temperature scaling |
+| External generalisation | A five-image external meningioma sample exists only as a qualitative demo | Evaluate a provenance-audited external cohort with compatible labels and no overlap with the development benchmark |
+| XAI validation | Grad-CAM++ and Attention Rollout are reviewed on three selected cases | Evaluate a preregistered masked subset with Dice, IoU, pointing-game or localisation-error metrics plus saliency sanity checks |
+| Clinical evidence | None claimed | Independent clinical governance, representative cohorts, and prospective validation would be required before any clinical claim |
+
+<Note title="No empty-result substitution" emoji="✓" variant="success">
+The completion gates are an experimental roadmap, not unreported results. Confidence intervals, calibration scores, external-cohort performance, and mask-based localisation metrics will be added only after their underlying predictions, annotations, and evaluation artefacts are released.
+</Note>
+
+## Reproducibility
+
+The companion implementation records the preprocessing audit, fixed split construction, four training configurations, evaluation scripts, model-specific XAI procedures, checkpoints, and reusable guidance modules.
+
+| Resource | Access |
+| --- | --- |
+| Model and experiment code | [GitHub repository](https://github.com/AnnyaB/HybridResNet50V2-RViT) |
+| Browser demonstration | [Hugging Face Space](https://huggingface.co/spaces/AnnyaaB/brain-tumour-pfd-gste-demo) |
+| Reusable modules | [PFD–GSTE on PyPI](https://pypi.org/project/pfd-gste/) |
+| Full evidence record | [Download the 58-page FYP report](/mitigating-shortcut-learning-in-brain-tumour-mri-classification.pdf) |
+| Machine-readable website data | `app/src/content/assets/data/` in this article repository |
+| Evidence-upgrade protocol | <code>VALIDATION_PLAN.md</code> in the article repository |
+
+```bash
+pip install pfd-gste
+```
+
+## Conclusion
+
+PFD–GSTE partially supports the project hypothesis. The stronger guidance pathway changed qualitative evidence focus most clearly in Hybrid B, but it did not improve the best held-out classification score. **Ablation B remained the strongest classifier; Hybrid B remained the strongest qualitative Grad-CAM++ localiser among the three reported cases.**
+
+The next decisive experiment is external, multi-centre validation with tumour masks, quantitative localisation, calibration testing, repeated seeds, and multi-sequence or volumetric MRI. Until then, accuracy and evidence quality should be reported as complementary—not interchangeable—properties.
+
+---
+
+### Supervision and project context
+
+This work was completed as a BSc Artificial Intelligence project in the Department of Computer Science, University of Hertfordshire, under the supervision of **Dr Kheng Lee Koay**. The report is dated **26 March 2026**.

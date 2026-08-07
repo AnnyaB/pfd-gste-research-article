@@ -1,0 +1,433 @@
+<div class="d3-model-performance"></div>
+<style>
+  .d3-model-performance {
+    position: relative;
+    width: 100%;
+    min-height: 430px;
+    color: var(--text-color);
+    font-family: var(--default-font-family, ui-sans-serif, system-ui);
+  }
+  .d3-model-performance * { box-sizing: border-box; }
+  .d3-model-performance svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .d3-model-performance .axes path,
+  .d3-model-performance .axes line { stroke: var(--axis-color); }
+  .d3-model-performance .axes text {
+    fill: var(--tick-color);
+    font: 10px var(--font-mono, monospace);
+  }
+  .d3-model-performance .grid line {
+    stroke: var(--grid-color);
+    stroke-dasharray: 3 5;
+  }
+  .d3-model-performance .grid path { display: none; }
+  .d3-model-performance .axis-label {
+    fill: var(--text-color);
+    font-size: 11px;
+    font-weight: 650;
+  }
+  .d3-model-performance .value-label {
+    fill: var(--text-color);
+    font: 700 10px var(--font-mono, monospace);
+  }
+  .d3-model-performance .best-label {
+    fill: var(--primary-color);
+    font: 700 8px var(--font-mono, monospace);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .d3-model-performance .bar {
+    cursor: pointer;
+    transition: filter 160ms ease;
+  }
+  .d3-model-performance .bar:hover,
+  .d3-model-performance .bar:focus {
+    filter: brightness(1.08) drop-shadow(0 2px 7px color-mix(in srgb, var(--primary-color) 28%, transparent));
+    outline: none;
+  }
+  .d3-model-performance .legend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .d3-model-performance .legend-title,
+  .d3-model-performance .controls label {
+    color: var(--text-color);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .d3-model-performance .legend .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+  .d3-model-performance .legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-color);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .d3-model-performance .legend .swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+  }
+  .d3-model-performance .controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .d3-model-performance .control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 178px;
+  }
+  .d3-model-performance .controls select {
+    width: 100%;
+    padding: 8px 28px 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    background: var(--surface-bg);
+    font-size: 12px;
+  }
+  .d3-model-performance .controls select:focus-visible {
+    border-color: var(--primary-color);
+    outline: 2px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+    outline-offset: 2px;
+  }
+  .d3-model-performance .detail {
+    display: grid;
+    grid-template-columns: 1.2fr repeat(3, .8fr);
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    background: var(--surface-bg);
+  }
+  .d3-model-performance .detail span,
+  .d3-model-performance .detail strong { display: block; }
+  .d3-model-performance .detail span {
+    color: var(--muted-color);
+    font: 600 8px/1 var(--font-mono, monospace);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  .d3-model-performance .detail strong {
+    margin-top: 5px;
+    font-size: 12px;
+  }
+  .d3-model-performance .d3-tooltip {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 0;
+    max-width: 250px;
+    padding: 9px 11px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    background: var(--surface-bg);
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    font-size: 11px;
+    line-height: 1.45;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-9999px, -9999px);
+    transition: opacity 120ms ease;
+  }
+  .d3-model-performance .d3-tooltip strong { display: block; margin-bottom: 3px; }
+  .d3-model-performance .error {
+    padding: 12px;
+    color: var(--danger-color);
+    white-space: pre-wrap;
+  }
+  @media (max-width: 620px) {
+    .d3-model-performance { min-height: 500px; }
+    .d3-model-performance .controls { justify-content: stretch; }
+    .d3-model-performance .control-group { width: 100%; }
+    .d3-model-performance .detail { grid-template-columns: 1fr 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .d3-model-performance .bar,
+    .d3-model-performance .d3-tooltip { transition: none; }
+  }
+</style>
+<script>
+  (() => {
+    const ensureD3 = (callback) => {
+      if (window.d3 && typeof window.d3.select === "function") return callback();
+      let script = document.getElementById("d3-cdn-script");
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "d3-cdn-script";
+        script.src = "https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js";
+        document.head.appendChild(script);
+      }
+      const ready = () => {
+        if (window.d3 && typeof window.d3.select === "function") callback();
+      };
+      script.addEventListener("load", ready, { once: true });
+      if (window.d3) ready();
+    };
+
+    const bootstrap = () => {
+      const scriptElement = document.currentScript;
+      let container = scriptElement ? scriptElement.previousElementSibling.previousElementSibling : null;
+      if (!(container && container.classList && container.classList.contains("d3-model-performance"))) {
+        const candidates = Array.from(document.querySelectorAll(".d3-model-performance"))
+          .filter((element) => !(element.dataset && element.dataset.mounted === "true"));
+        container = candidates[candidates.length - 1] || null;
+      }
+      if (!container || container.dataset.mounted === "true") return;
+      container.dataset.mounted = "true";
+
+      let mountElement = container;
+      while (mountElement && !mountElement.getAttribute?.("data-datafiles")) {
+        mountElement = mountElement.parentElement;
+      }
+      let providedData = null;
+      try {
+        const attribute = mountElement && mountElement.getAttribute
+          ? mountElement.getAttribute("data-datafiles")
+          : null;
+        if (attribute && attribute.trim()) {
+          providedData = attribute.trim().startsWith("[")
+            ? JSON.parse(attribute)
+            : attribute.trim();
+        }
+      } catch (_) {}
+      const prefixData = (path) =>
+        typeof path === "string" && path && !path.includes("/") ? "/data/" + path : path;
+      const paths = providedData
+        ? (Array.isArray(providedData) ? providedData : [providedData]).map(prefixData)
+        : [
+            "/data/model-metrics.csv",
+            "./assets/data/model-metrics.csv",
+            "../assets/data/model-metrics.csv"
+          ];
+      const fetchFirstAvailable = async (candidates) => {
+        for (const path of candidates) {
+          try {
+            const response = await fetch(path, { cache: "no-cache" });
+            if (response.ok) return await response.text();
+          } catch (_) {}
+        }
+        throw new Error("Model metrics CSV not found.");
+      };
+
+      const palette = window.ColorPalettes && window.ColorPalettes.getColors
+        ? window.ColorPalettes.getColors("categorical", 2)
+        : ["var(--primary-color)", "var(--info-color)"];
+      const primary = window.ColorPalettes && window.ColorPalettes.getPrimary
+        ? window.ColorPalettes.getPrimary()
+        : "var(--primary-color)";
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "d3-tooltip";
+      const tooltipInner = document.createElement("div");
+      tooltipInner.className = "d3-tooltip__inner";
+      tooltip.appendChild(tooltipInner);
+      container.appendChild(tooltip);
+
+      const svg = d3.select(container).append("svg").attr("aria-label", "Held-out model performance chart");
+      const rootGroup = svg.append("g");
+      const gridGroup = rootGroup.append("g").attr("class", "grid");
+      const xAxisGroup = rootGroup.append("g").attr("class", "axes x-axis");
+      const yAxisGroup = rootGroup.append("g").attr("class", "axes y-axis");
+      const barsGroup = rootGroup.append("g").attr("class", "bars");
+      const labelsGroup = rootGroup.append("g").attr("class", "labels");
+      const xLabel = svg.append("text").attr("class", "axis-label").attr("text-anchor", "middle");
+
+      const legend = document.createElement("div");
+      legend.className = "legend";
+      legend.innerHTML =
+        '<div class="legend-title">Legend</div>' +
+        '<div class="items">' +
+        '<span class="item"><span class="swatch"></span><span>Guided PFD–GSTE</span></span>' +
+        '<span class="item"><span class="swatch"></span><span>Unguided ablation</span></span>' +
+        '</div>';
+      const swatches = legend.querySelectorAll(".swatch");
+      swatches[0].style.background = palette[0];
+      swatches[1].style.background = palette[1];
+      container.appendChild(legend);
+
+      const controls = document.createElement("div");
+      controls.className = "controls";
+      const controlId = "metric-select-" + Math.random().toString(36).slice(2);
+      controls.innerHTML =
+        '<div class="control-group">' +
+        '<label for="' + controlId + '">Metric</label>' +
+        '<select id="' + controlId + '">' +
+        '<option value="accuracy">Test accuracy</option>' +
+        '<option value="macro_f1">Macro-F1</option>' +
+        '<option value="specificity">Specificity</option>' +
+        '<option value="errors">Test errors</option>' +
+        '</select></div>';
+      container.appendChild(controls);
+      const select = controls.querySelector("select");
+
+      const detail = document.createElement("div");
+      detail.className = "detail";
+      container.appendChild(detail);
+
+      const metricConfig = {
+        accuracy: { label: "Test accuracy (%)", min: 0.98, max: 1, lower: false, format: d3.format(".2%") },
+        macro_f1: { label: "Macro-F1", min: 0.98, max: 1, lower: false, format: d3.format(".4f") },
+        specificity: { label: "Specificity (%)", min: 0.99, max: 1, lower: false, format: d3.format(".2%") },
+        errors: { label: "Absolute errors (lower is better)", min: 0, max: 20, lower: true, format: d3.format("d") }
+      };
+      let data = [];
+      let activeMetric = "accuracy";
+      let selectedModel = "Ablation B";
+      let width = 800;
+      let height = 330;
+
+      const showDetail = (row) => {
+        selectedModel = row.model;
+        detail.innerHTML =
+          '<div><span>Selected model</span><strong>' + row.model + '</strong></div>' +
+          '<div><span>Parameters</span><strong>' + d3.format(".2f")(row.parameters_m) + 'M</strong></div>' +
+          '<div><span>Test loss</span><strong>' + d3.format(".4f")(row.loss) + '</strong></div>' +
+          '<div><span>Best epoch</span><strong>' + row.best_epoch + '</strong></div>';
+      };
+      const showTooltip = (event, row) => {
+        tooltipInner.innerHTML =
+          '<strong>' + row.model + '</strong>' +
+          'Accuracy ' + d3.format(".2%")(row.accuracy) + '<br>' +
+          'Macro-F1 ' + d3.format(".4f")(row.macro_f1) + '<br>' +
+          'Specificity ' + d3.format(".2%")(row.specificity) + '<br>' +
+          'Errors ' + row.errors;
+        const pointer = d3.pointer(event, container);
+        tooltip.style.opacity = "1";
+        tooltip.style.transform = "translate(" + Math.round(pointer[0] + 12) + "px," + Math.round(pointer[1] + 12) + "px)";
+      };
+      const hideTooltip = () => {
+        tooltip.style.opacity = "0";
+        tooltip.style.transform = "translate(-9999px,-9999px)";
+      };
+
+      const render = () => {
+        if (!data.length) return;
+        const compact = container.clientWidth < 620;
+        width = container.clientWidth || 800;
+        height = Math.max(300, Math.round(width / 2.25));
+        const margin = { top: 18, right: compact ? 58 : 82, bottom: 50, left: compact ? 92 : 126 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        const config = metricConfig[activeMetric];
+        const x = d3.scaleLinear().domain([config.min, config.max]).range([0, innerWidth]);
+        const y = d3.scaleBand().domain(data.map((row) => row.model)).range([0, innerHeight]).padding(0.32);
+        const values = data.map((row) => row[activeMetric]);
+        const best = config.lower ? d3.min(values) : d3.max(values);
+
+        svg.attr("width", width).attr("height", height);
+        rootGroup.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        const ticks = activeMetric === "errors" ? 5 : 5;
+        const tickFormat = activeMetric === "errors" ? d3.format("d") : d3.format(".1%");
+        gridGroup.call(d3.axisBottom(x).ticks(ticks).tickSize(innerHeight).tickFormat(() => ""));
+        xAxisGroup.attr("transform", "translate(0," + innerHeight + ")")
+          .call(d3.axisBottom(x).ticks(ticks).tickFormat(tickFormat));
+        yAxisGroup.call(d3.axisLeft(y).tickSize(0));
+        yAxisGroup.select(".domain").remove();
+
+        barsGroup.selectAll("rect.bar")
+          .data(data, (row) => row.model)
+          .join("rect")
+          .attr("class", "bar")
+          .attr("tabindex", 0)
+          .attr("role", "button")
+          .attr("aria-label", (row) => row.model + ", " + config.label + " " + config.format(row[activeMetric]))
+          .attr("x", 0)
+          .attr("y", (row) => y(row.model))
+          .attr("height", y.bandwidth())
+          .attr("rx", Math.min(7, y.bandwidth() / 2))
+          .attr("fill", (row) => row.guidance.startsWith("PFD") ? palette[0] : palette[1])
+          .attr("stroke", (row) => row[activeMetric] === best ? primary : "none")
+          .attr("stroke-width", (row) => row[activeMetric] === best ? 2 : 0)
+          .on("mouseenter", showTooltip)
+          .on("mousemove", showTooltip)
+          .on("mouseleave", hideTooltip)
+          .on("focus", (event, row) => showDetail(row))
+          .on("click", (event, row) => showDetail(row))
+          .transition().duration(160)
+          .attr("width", (row) => Math.max(2, x(row[activeMetric]) - x(config.min)));
+
+        labelsGroup.selectAll("text.value-label")
+          .data(data, (row) => row.model)
+          .join("text")
+          .attr("class", "value-label")
+          .attr("x", (row) => Math.min(innerWidth + 7, x(row[activeMetric]) + 8))
+          .attr("y", (row) => y(row.model) + y.bandwidth() / 2 + 4)
+          .text((row) => config.format(row[activeMetric]));
+
+        labelsGroup.selectAll("text.best-label")
+          .data(data.filter((row) => row[activeMetric] === best), (row) => row.model)
+          .join("text")
+          .attr("class", "best-label")
+          .attr("x", (row) => Math.min(innerWidth - 4, x(row[activeMetric]) - 7))
+          .attr("y", (row) => y(row.model) + y.bandwidth() / 2 + 3)
+          .attr("text-anchor", "end")
+          .text(activeMetric === "errors" ? "fewest" : "best");
+
+        xLabel.attr("x", margin.left + innerWidth / 2).attr("y", height - 7).text(config.label);
+        const selected = data.find((row) => row.model === selectedModel) || data[0];
+        showDetail(selected);
+      };
+
+      select.addEventListener("change", () => {
+        activeMetric = select.value;
+        render();
+      });
+
+      fetchFirstAvailable(paths)
+        .then((text) => {
+          data = d3.csvParse(text, (row) => ({
+            ...row,
+            parameters_m: +row.parameters_m,
+            accuracy: +row.accuracy,
+            macro_f1: +row.macro_f1,
+            loss: +row.loss,
+            specificity: +row.specificity,
+            kappa: +row.kappa,
+            mcc: +row.mcc,
+            errors: +row.errors,
+            best_epoch: +row.best_epoch
+          }));
+          render();
+          if (window.ResizeObserver) {
+            const observer = new ResizeObserver(render);
+            observer.observe(container);
+          } else {
+            window.addEventListener("resize", render);
+          }
+        })
+        .catch((error) => {
+          const message = document.createElement("pre");
+          message.className = "error";
+          message.textContent = "Unable to load the verified model metrics: " + error.message;
+          container.appendChild(message);
+        });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => ensureD3(bootstrap), { once: true });
+    } else {
+      ensureD3(bootstrap);
+    }
+  })();
+</script>

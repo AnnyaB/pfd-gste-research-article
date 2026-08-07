@@ -1,0 +1,5 @@
+model,guided,accuracy,correct_gradcam_pp_cases,total_selected_cases,note
+Hybrid A,true,0.9875,0,3,Weaker guidance
+Hybrid B,true,0.9852,3,3,Stronger guidance
+Ablation A,false,0.9875,1,3,A-family control
+Ablation B,false,0.9922,1,3,Best classifier

@@ -1,0 +1,407 @@
+<div class="pfd-banner" role="region" aria-label="Interactive PFD-GSTE evidence pathway">
+  <style>
+    .pfd-banner {
+      --pfd-teal: #0e9f94;
+      --pfd-blue: #5578d8;
+      --pfd-amber: #f2b45d;
+      position: relative;
+      width: 100%;
+      min-height: 430px;
+      overflow: hidden;
+      border-radius: 18px;
+      color: #eff8f7;
+      background:
+        radial-gradient(circle at 14% 4%, rgba(20, 179, 166, .18), transparent 31%),
+        radial-gradient(circle at 85% 94%, rgba(85, 120, 216, .18), transparent 30%),
+        #091117;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+      font-family: var(--default-font-family, ui-sans-serif, system-ui);
+    }
+    .pfd-banner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .34;
+      background-image:
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, #000, transparent 96%);
+      pointer-events: none;
+    }
+    .pfd-banner * { box-sizing: border-box; }
+    .pfd-banner__top {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 26px 30px 10px;
+      gap: 20px;
+    }
+    .pfd-banner__eyebrow {
+      color: #6ee0d5;
+      font: 700 10px/1 var(--font-mono, monospace);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .pfd-banner__hint {
+      color: #8da0ad;
+      font: 500 10px/1 var(--font-mono, monospace);
+      letter-spacing: .04em;
+    }
+    .pfd-banner__pipeline {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+      padding: 24px 30px;
+    }
+    .pfd-stage {
+      position: relative;
+      min-height: 170px;
+      padding: 15px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 14px;
+      color: inherit;
+      background: rgba(255,255,255,.025);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease;
+    }
+    .pfd-stage::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -19px;
+      width: 19px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(110,224,213,.8), rgba(110,224,213,.12));
+    }
+    .pfd-stage:last-child::after { display: none; }
+    .pfd-stage:hover,
+    .pfd-stage:focus-visible {
+      transform: translateY(-3px);
+      border-color: rgba(110,224,213,.65);
+      outline: none;
+    }
+    .pfd-stage.is-active {
+      border-color: rgba(110,224,213,.85);
+      background: rgba(14,159,148,.12);
+      box-shadow: 0 14px 40px rgba(0,0,0,.22), inset 0 0 30px rgba(14,159,148,.07);
+    }
+    .pfd-stage__meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #80939f;
+      font: 700 8px/1 var(--font-mono, monospace);
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .pfd-stage.is-active .pfd-stage__meta { color: #7be5da; }
+    .pfd-stage__visual {
+      height: 96px;
+      display: grid;
+      place-items: center;
+      margin-top: 12px;
+    }
+    .pfd-stage__name {
+      display: block;
+      margin-top: 7px;
+      color: #dfe8ea;
+      font-size: 12px;
+      font-weight: 650;
+      text-align: center;
+    }
+    .pfd-mri {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      overflow: hidden;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 0 28px rgba(85,120,216,.16);
+    }
+    .pfd-mri img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(.2) contrast(1.08);
+      opacity: .86;
+    }
+    .pfd-mri i {
+      position: absolute;
+      top: 37px;
+      right: 22px;
+      width: 20px;
+      height: 25px;
+      border: 1.5px solid #75e5d9;
+      border-radius: 50% 45% 54% 42%;
+      box-shadow: 0 0 13px rgba(93,224,210,.7);
+      transform: rotate(-14deg);
+    }
+    .pfd-mask {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      border: 1px solid rgba(110,224,213,.38);
+      border-radius: 50%;
+      background: radial-gradient(circle at 60% 47%, rgba(110,224,213,.82) 0 8%, rgba(14,159,148,.28) 17%, transparent 39%);
+      box-shadow: inset 0 0 32px rgba(14,159,148,.1);
+    }
+    .pfd-mask::before,
+    .pfd-mask::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(110,224,213,.22);
+      border-radius: 50%;
+      inset: 14px;
+    }
+    .pfd-mask::after { inset: 28px; }
+    .pfd-mask i {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #72e2d7;
+      box-shadow: 0 0 10px #4ecfc1;
+      animation: pfdPulse 2.5s ease-in-out infinite;
+    }
+    .pfd-mask i:nth-child(1) { top: 10px; left: 39px; }
+    .pfd-mask i:nth-child(2) { top: 45px; right: 11px; animation-delay: .5s; }
+    .pfd-mask i:nth-child(3) { bottom: 11px; left: 20px; animation-delay: 1s; }
+    .pfd-tokens {
+      display: grid;
+      grid-template-columns: repeat(7, 8px);
+      gap: 4px;
+      transform: rotate(-3deg);
+    }
+    .pfd-tokens i {
+      width: 8px;
+      height: 8px;
+      border: 1px solid rgba(124,153,224,.38);
+      border-radius: 2px;
+      background: rgba(85,120,216,.25);
+    }
+    .pfd-tokens i:nth-child(18),
+    .pfd-tokens i:nth-child(19),
+    .pfd-tokens i:nth-child(25),
+    .pfd-tokens i:nth-child(26),
+    .pfd-tokens i:nth-child(32) {
+      border-color: #7ae3d8;
+      background: #45c9bb;
+      box-shadow: 0 0 9px rgba(83,218,203,.7);
+      animation: pfdPulse 2.4s ease-in-out infinite;
+    }
+    .pfd-evidence {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background:
+        radial-gradient(ellipse at 61% 49%, #ffd46c 0 7%, rgba(237,115,73,.92) 15%, rgba(91,89,185,.53) 32%, transparent 52%),
+        radial-gradient(circle, #47536e, #171f2a 72%);
+      box-shadow: 0 0 28px rgba(242,180,93,.13);
+    }
+    .pfd-evidence::after {
+      content: "";
+      position: absolute;
+      top: 25px;
+      right: 13px;
+      width: 28px;
+      height: 34px;
+      border: 1px dashed rgba(255,255,255,.78);
+      border-radius: 50%;
+      transform: rotate(-11deg);
+    }
+    .pfd-banner__detail {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      gap: 17px;
+      align-items: center;
+      margin: 4px 30px 28px;
+      padding: 18px 20px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      background: rgba(0,0,0,.2);
+      backdrop-filter: blur(8px);
+    }
+    .pfd-detail__index {
+      color: #66d9ce;
+      font: 600 22px/1 var(--font-mono, monospace);
+    }
+    .pfd-detail__copy strong {
+      display: block;
+      color: #f1f6f7;
+      font-size: 13px;
+    }
+    .pfd-detail__copy p {
+      max-width: 610px;
+      margin: 3px 0 0;
+      color: #9babb5;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .pfd-detail__facts {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 7px;
+      max-width: 300px;
+    }
+    .pfd-detail__facts span {
+      padding: 5px 8px;
+      border: 1px solid rgba(110,224,213,.18);
+      border-radius: 999px;
+      color: #aac1c7;
+      background: rgba(14,159,148,.08);
+      font: 600 8px/1 var(--font-mono, monospace);
+      letter-spacing: .03em;
+    }
+    @keyframes pfdPulse {
+      0%, 100% { opacity: .55; transform: scale(.9); }
+      50% { opacity: 1; transform: scale(1.18); }
+    }
+    @media (max-width: 720px) {
+      .pfd-banner { min-height: 620px; }
+      .pfd-banner__top { padding: 22px 18px 8px; }
+      .pfd-banner__hint { display: none; }
+      .pfd-banner__pipeline {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 18px;
+      }
+      .pfd-stage { min-height: 150px; }
+      .pfd-stage::after { display: none; }
+      .pfd-stage__visual { height: 80px; }
+      .pfd-banner__detail {
+        grid-template-columns: 34px 1fr;
+        margin: 2px 18px 22px;
+      }
+      .pfd-detail__facts {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        max-width: none;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pfd-banner *, .pfd-banner *::before, .pfd-banner *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+
+  <div class="pfd-banner__top">
+    <span class="pfd-banner__eyebrow">Evidence-aware medical AI · PFD–GSTE</span>
+    <span class="pfd-banner__hint">Select a stage to inspect the intervention</span>
+  </div>
+
+  <div class="pfd-banner__pipeline">
+    <button class="pfd-stage is-active" type="button" data-stage="0" aria-pressed="true">
+      <span class="pfd-stage__meta"><span>01</span><span>Input</span></span>
+      <span class="pfd-stage__visual">
+        <span class="pfd-mri"><img src="/hero-mri.webp" alt="" /><i></i></span>
+      </span>
+      <span class="pfd-stage__name">Brain MRI</span>
+    </button>
+    <button class="pfd-stage" type="button" data-stage="1" aria-pressed="false">
+      <span class="pfd-stage__meta"><span>02</span><span>Focus</span></span>
+      <span class="pfd-stage__visual">
+        <span class="pfd-mask"><i></i><i></i><i></i></span>
+      </span>
+      <span class="pfd-stage__name">PFD mask</span>
+    </button>
+    <button class="pfd-stage" type="button" data-stage="2" aria-pressed="false">
+      <span class="pfd-stage__meta"><span>03</span><span>Guide</span></span>
+      <span class="pfd-stage__visual">
+        <span class="pfd-tokens">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+      </span>
+      <span class="pfd-stage__name">GSTE tokens</span>
+    </button>
+    <button class="pfd-stage" type="button" data-stage="3" aria-pressed="false">
+      <span class="pfd-stage__meta"><span>04</span><span>Verify</span></span>
+      <span class="pfd-stage__visual"><span class="pfd-evidence"></span></span>
+      <span class="pfd-stage__name">Inspected evidence</span>
+    </button>
+  </div>
+
+  <div class="pfd-banner__detail" aria-live="polite">
+    <span class="pfd-detail__index">01</span>
+    <div class="pfd-detail__copy">
+      <strong>Fixed four-class MRI benchmark</strong>
+      <p>Begin from a leakage-aware split created after exact duplicate removal; preserve Kaggle Testing as the held-out test set.</p>
+    </div>
+    <div class="pfd-detail__facts">
+      <span>6,726 unique</span><span>1,284 test</span><span>4 classes</span>
+    </div>
+  </div>
+</div>
+<script>
+  (() => {
+    const root = document.currentScript && document.currentScript.previousElementSibling;
+    if (!root || root.dataset.mounted === "true") return;
+    root.dataset.mounted = "true";
+    const details = [
+      {
+        index: "01",
+        title: "Fixed four-class MRI benchmark",
+        copy: "Begin from a leakage-aware split created after exact duplicate removal; preserve Kaggle Testing as the held-out test set.",
+        facts: ["6,726 unique", "1,284 test", "4 classes"]
+      },
+      {
+        index: "02",
+        title: "Learn a soft spatial preference",
+        copy: "PFD infers a one-channel differentiable gate from CNN features. It receives no manual tumour segmentation mask.",
+        facts: ["m = σ(g(F))", "soft gate", "no masks"]
+      },
+      {
+        index: "03",
+        title: "Transfer focus into the token pathway",
+        copy: "GSTE resizes and mean-normalises the gate before reweighting either 49 feature tokens or 196 raw-image patch tokens.",
+        facts: ["49 feature tokens", "196 patches", "mean-normalised"]
+      },
+      {
+        index: "04",
+        title: "Separate prediction from evidence quality",
+        copy: "Evaluate held-out classification, branch-specific explanations, and 20-pass MC Dropout without treating one as a substitute for another.",
+        facts: ["Grad-CAM++", "Attention Rollout", "20 MC passes"]
+      }
+    ];
+    const buttons = Array.from(root.querySelectorAll(".pfd-stage"));
+    const index = root.querySelector(".pfd-detail__index");
+    const title = root.querySelector(".pfd-detail__copy strong");
+    const copy = root.querySelector(".pfd-detail__copy p");
+    const facts = root.querySelector(".pfd-detail__facts");
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = Number(button.dataset.stage || 0);
+        const item = details[id];
+        buttons.forEach((node) => {
+          const active = node === button;
+          node.classList.toggle("is-active", active);
+          node.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        index.textContent = item.index;
+        title.textContent = item.title;
+        copy.textContent = item.copy;
+        facts.innerHTML = "";
+        item.facts.forEach((fact) => {
+          const pill = document.createElement("span");
+          pill.textContent = fact;
+          facts.appendChild(pill);
+        });
+      });
+    });
+  })();
+</script>

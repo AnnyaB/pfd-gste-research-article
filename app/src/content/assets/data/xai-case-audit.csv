@@ -1,0 +1,13 @@
+case,model,grad_cam_pp,attention_rollout
+Correct meningioma,Hybrid A,Wrong,Partially correct
+Correct meningioma,Ablation A,Wrong,Partially correct
+Correct meningioma,Hybrid B,Correct,Wrong
+Correct meningioma,Ablation B,Correct,Wrong
+Challenging glioma,Hybrid A,Wrong,Wrong
+Challenging glioma,Ablation A,Correct,Partially wrong
+Challenging glioma,Hybrid B,Correct,Partially wrong
+Challenging glioma,Ablation B,Partially wrong,Partially wrong
+Pituitary misclassified as meningioma,Hybrid A,Wrong,Wrong
+Pituitary misclassified as meningioma,Ablation A,Wrong,Partially correct
+Pituitary misclassified as meningioma,Hybrid B,Correct,Partially correct
+Pituitary misclassified as meningioma,Ablation B,Wrong,Partially correct

@@ -1,0 +1,81 @@
+import HtmlEmbed from "../../components/HtmlEmbed.astro";
+import Image from "../../components/Image.astro";
+import Note from "../../components/Note.astro";
+import Wide from "../../components/Wide.astro";
+import xaiMeningioma from "../assets/image/xai-meningioma.webp";
+import xaiGlioma from "../assets/image/xai-glioma.webp";
+import xaiPituitary from "../assets/image/xai-pituitary-error.webp";
+
+## Evidence Focus
+
+Classification accuracy and localisation quality answer different questions. The report therefore inspects both the CNN branch with Grad-CAM++ [@chattopadhyay2018gradcampp] and the transformer branch with Attention Rollout [@abnar2020attentionflow].
+
+This analysis is deliberately qualitative. Saliency maps can be unstable or visually persuasive without being faithful, so they require cautious interpretation and stronger controls than a few attractive examples [@adebayo2018sanity; @arun2021saliency].
+
+<Wide>
+  <HtmlEmbed
+    src="d3-classification-localisation.html"
+    title="Classification–localisation trade-off"
+    desc="Horizontal position is held-out test accuracy. Vertical position is the number of Grad-CAM++ judgements marked “Correct” in the three selected report cases. The vertical axis is qualitative and n=3—not a segmentation score."
+    id="classification-localisation"
+    data="classification-localisation.csv"
+    downloadable
+  />
+</Wide>
+
+| Case | Hybrid A | Hybrid B | Ablation A | Ablation B |
+| --- | --- | --- | --- | --- |
+| Correct meningioma | GC++ wrong; rollout partially correct | **GC++ correct**; rollout wrong | GC++ wrong; rollout partially correct | **GC++ correct**; rollout wrong |
+| Challenging glioma | GC++ wrong; rollout wrong | **GC++ correct**; rollout partially wrong | **GC++ correct**; rollout partially wrong | GC++ partially wrong; rollout partially wrong |
+| Pituitary → meningioma error | GC++ wrong; rollout wrong | **GC++ correct**; rollout partially correct | GC++ wrong; rollout partially correct | GC++ wrong; rollout partially correct |
+
+By this report-level visual judgement, Hybrid B recorded 3/3 correct Grad-CAM++ localisations; Hybrid A recorded 0/3; Ablation A and Ablation B each recorded 1/3.
+
+<Wide>
+  <Image
+    src={xaiMeningioma}
+    alt="Grad-CAM++ and Attention Rollout comparison for a correctly classified meningioma across all four model variants."
+    caption="<strong>Correct meningioma.</strong> All variants classified the image correctly, but the reported evidence alignment differed across branches."
+    zoomable
+    downloadable
+  />
+  <Image
+    src={xaiGlioma}
+    alt="Grad-CAM++ and Attention Rollout comparison for a challenging glioma across all four model variants."
+    caption="<strong>Challenging glioma.</strong> Hybrid B and Ablation A were judged tumour-centred under Grad-CAM++; rollout remained partial or wrong."
+    zoomable
+    downloadable
+  />
+  <Image
+    src={xaiPituitary}
+    alt="Grad-CAM++ and Attention Rollout comparison for a pituitary MRI misclassified as meningioma by every model."
+    caption="<strong>Shared subtype error.</strong> Every variant predicted meningioma instead of pituitary. Hybrid B still localised the visible region under Grad-CAM++, demonstrating that evidence location and class correctness can diverge."
+    zoomable
+    downloadable
+  />
+</Wide>
+
+<Note title="What this supports—and what it does not" emoji="🔎" variant="info">
+The three selected cases provide qualitative support that the stronger Hybrid B intervention can alter evidence focus. They do not demonstrate full-dataset localisation performance, causal faithfulness, or elimination of shortcut learning. There are no ground-truth tumour masks, Dice scores, IoU scores, or pointing-game results.
+</Note>
+
+## Uncertainty Analysis
+
+MC Dropout retained dropout at inference while keeping BatchNorm layers in evaluation mode. Predictive statistics were computed over **20 stochastic forward passes** [@gal2016dropout].
+
+In the pituitary image misclassified as meningioma by all four models, confidence remained high:
+
+<HtmlEmbed
+  src="d3-uncertainty.html"
+  title="Confidence on the shared pituitary → meningioma error"
+  desc="Mean confidence over 20 MC Dropout passes. The axis is zoomed to 90–100% and must not be interpreted as a calibration curve."
+  id="uncertainty-shared-error"
+  data="uncertainty-shared-error.csv"
+  downloadable
+/>
+
+The example exposes an important failure mode: stochastic uncertainty did not prevent a wrong-but-confident subtype prediction.
+
+<Note title="Calibration gap" emoji="⚠️" variant="danger">
+Expected calibration error, Brier score, reliability diagrams, and external calibration were not reported. MC Dropout variance alone does not demonstrate clinically calibrated confidence [@rajaraman2022calibration].
+</Note>

@@ -1,0 +1,53 @@
+import Note from "../../components/Note.astro";
+import Quote from "../../components/Quote.astro";
+
+## TL;DR
+
+High held-out accuracy did not settle the reliability question. Across four ResNet50V2–RViT variants, **Ablation B** was the strongest classifier, reaching **99.22% test accuracy**, **0.9920 macro-F1**, and **10 errors in 1,284 test images**. Yet the stronger guided model, **Hybrid B**, produced the most tumour-centred Grad-CAM++ evidence in the **three qualitative cases reported in the FYP**.
+
+The central result is therefore a trade-off, not a victory claim: pathology guidance changed *where* the system appeared to look more clearly than it improved *what* class it predicted.
+
+| Study fact | Verified value |
+| --- | ---: |
+| Raw images discovered | 7,023 |
+| Exact duplicates removed | 297 |
+| Unique images retained | 6,726 |
+| Held-out test images | 1,284 |
+| Best test accuracy | 99.22% |
+| Best macro-F1 | 0.9920 |
+| Fewest test errors | 10 |
+
+<Note title="Evidence boundary" emoji="⚖️" variant="info">
+This is a BSc Artificial Intelligence project, not a peer-reviewed clinical study or a certified medical device. It contains no external hospital validation, tumour-mask evaluation, or formal calibration analysis. The page makes no definitive state-of-the-art or clinical-generalisation claim.
+</Note>
+
+## Why Shortcut Learning Matters
+
+A brain MRI classifier can be accurate for the wrong reason. Instead of relying on pathology, a model may exploit background, skull boundaries, annotations, acquisition patterns, or other dataset-specific regularities. This is the shortcut-learning problem: benchmark performance can remain high even when the learned evidence is brittle or clinically irrelevant [@geirhos2020shortcut; @lin2024shortcut].
+
+The risk is particularly important in medical imaging because seemingly minor differences in preprocessing, patient populations, scanners, and dataset construction can create strong non-causal signals. Methodological reviews therefore emphasise leakage control, transparent split policies, held-out evaluation, and external validation [@varoquaux2022failures; @mongan2020claim].
+
+<Quote source="Project research question">
+Can pathology-guided CNN–Transformer hybrids maintain strong four-class performance while shifting the evidence pathway toward tumour-related regions?
+</Quote>
+
+### What was tested
+
+The study compares two guided systems with two same-family ablations:
+
+| Model | CNN pathway | Transformer pathway | Guidance intervention |
+| --- | --- | --- | --- |
+| Hybrid A | ResNet50V2 descriptor | 49 CNN feature tokens | PFD mask guides transformer-facing tokens |
+| Ablation A | Matched A-family backbone | Same tokenisation | PFD–GSTE removed |
+| Hybrid B | PFD-gated ResNet50V2 descriptor | 196 raw-image patch tokens before optional pooling | PFD gates CNN evidence and guides patch tokens |
+| Ablation B | Matched B-family backbone | Same tokenisation | PFD–GSTE removed |
+
+### What the work contributes
+
+1. A leakage-aware benchmark built after byte-level SHA1 duplicate removal.
+2. Two pathology-guided ResNet50V2–RViT designs with explicit same-family ablations.
+3. Branch-specific explainability using Grad-CAM++ and Attention Rollout.
+4. MC Dropout analysis over 20 stochastic passes.
+5. Reproducible training, evaluation, visualisation, checkpoints, a browser demo, and reusable PFD–GSTE modules.
+
+These are contributions within the project’s experimental setting. They do not establish that shortcut learning has been eliminated.
