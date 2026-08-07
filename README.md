@@ -19,8 +19,6 @@
 <p align="center">
   <a href="https://annyab.github.io/pfd-gste-research-article/"><strong>Read the research article</strong></a>
   ·
-  <a href="https://annyab.github.io/pfd-gste-research-article/dataviz/">Explore the visualisations</a>
-  ·
   <a href="VALIDATION_PLAN.md">Review the evidence protocol</a>
   ·
   <a href="https://github.com/AnnyaB/HybridResNet50V2-RViT">Inspect the implementation</a>
