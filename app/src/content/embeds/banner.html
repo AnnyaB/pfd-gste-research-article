@@ -305,7 +305,7 @@
     <button class="pfd-stage is-active" type="button" data-stage="0" aria-pressed="true">
       <span class="pfd-stage__meta"><span>01</span><span>Input</span></span>
       <span class="pfd-stage__visual">
-        <span class="pfd-mri"><img src="/hero-mri.webp" alt="" /><i></i></span>
+        <span class="pfd-mri"><img data-asset="hero-mri.webp" alt="" /><i></i></span>
       </span>
       <span class="pfd-stage__name">Brain MRI</span>
     </button>
@@ -352,6 +352,9 @@
     const root = document.currentScript && document.currentScript.previousElementSibling;
     if (!root || root.dataset.mounted === "true") return;
     root.dataset.mounted = "true";
+    const assetBase = document.documentElement.dataset.assetBase || "/";
+    const mri = root.querySelector(".pfd-mri img[data-asset]");
+    if (mri) mri.src = `${assetBase}${mri.dataset.asset}`;
     const details = [
       {
         index: "01",

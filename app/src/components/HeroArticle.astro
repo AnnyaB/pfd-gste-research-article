@@ -38,6 +38,9 @@ const hasMultipleAffiliations =
 
 const pdfBase = titleRaw ? stripHtml(titleRaw) : stripHtml(title);
 const pdfFilename = `${slugify(pdfBase)}.pdf`;
+const assetBase = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
 ---
 
 <section class="hero">
@@ -162,7 +165,7 @@ const pdfFilename = `${slugify(pdfBase)}.pdf`;
           <p class="pdf-pro-only" style="display: none;">
             <a
               class="button"
-              href={`/${pdfFilename}`}
+              href={`${assetBase}${pdfFilename}`}
               download={pdfFilename}
               aria-label={`Download PDF ${pdfFilename}`}
             >

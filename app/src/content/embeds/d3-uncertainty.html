@@ -163,12 +163,17 @@
             : attribute.trim();
         }
       } catch (_) {}
-      const prefixData = (path) =>
-        typeof path === "string" && path && !path.includes("/") ? "/data/" + path : path;
+      const articleBase = (document.documentElement.dataset.assetBase || "/").replace(/\/?$/, "/");
+      const publicData = (filename) => `${articleBase}data/${filename}`;
+      const prefixData = (path) => {
+        if (typeof path !== "string" || !path) return path;
+        if (!path.includes("/")) return publicData(path);
+        return path.startsWith("/data/") ? `${articleBase}${path.slice(1)}` : path;
+      };
       const paths = providedData
         ? (Array.isArray(providedData) ? providedData : [providedData]).map(prefixData)
         : [
-            "/data/uncertainty-shared-error.csv",
+            publicData("uncertainty-shared-error.csv"),
             "./assets/data/uncertainty-shared-error.csv",
             "../assets/data/uncertainty-shared-error.csv"
           ];
