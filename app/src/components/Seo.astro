@@ -1,4 +1,6 @@
 ---
+import { slugify } from "./heroUtils";
+
 interface Props {
   title: string;
   description?: string;
@@ -34,6 +36,35 @@ const ogImage =
         : image
     : undefined;
 
+// Google Scholar / Highwire metadata. Keep the bibliographic title on one
+// logical line and link the HTML article to the co-located canonical PDF.
+const citationTitle = String(title || "")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const citationPublicationDate = (() => {
+  if (!published) return undefined;
+  const raw = String(published).trim();
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[1]}/${Number(iso[2])}/${Number(iso[3])}`;
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${parsed.getUTCFullYear()}/${parsed.getUTCMonth() + 1}/${parsed.getUTCDate()}`;
+  }
+
+  const year = raw.match(/\b(19|20)\d{2}\b/);
+  return year ? year[0] : undefined;
+})();
+
+const citationPdfUrl = url
+  ? new URL(
+      `${slugify(citationTitle)}.pdf`,
+      url.endsWith("/") ? url : `${url}/`,
+    ).toString()
+  : undefined;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Article",
@@ -56,6 +87,14 @@ const jsonLd = {
 <title>{title}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={url} />
+
+<!-- Google Scholar / Highwire Press bibliographic metadata -->
+<meta name="citation_title" content={citationTitle} />
+{authors.map((a) => <meta name="citation_author" content={a} />)}
+{citationPublicationDate && (
+  <meta name="citation_publication_date" content={citationPublicationDate} />
+)}
+{citationPdfUrl && <meta name="citation_pdf_url" content={citationPdfUrl} />}
 
 <meta property="og:type" content="article" />
 <meta property="og:title" content={title} />
