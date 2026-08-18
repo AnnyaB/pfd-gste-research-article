@@ -36,9 +36,12 @@ const ogImage =
         : image
     : undefined;
 
-// Google Scholar / Highwire metadata. Keep the bibliographic title on one
-// logical line and link the HTML article to the co-located canonical PDF.
+// Google Scholar / Highwire metadata. The article source intentionally uses
+// an escaped "\\n" to format the visible title on two lines; bibliographic
+// metadata must expose the title as one plain logical line.
 const citationTitle = String(title || "")
+  .replace(/\\n/g, " ")
+  .replace(/[\r\n]+/g, " ")
   .replace(/\s+/g, " ")
   .trim();
 
@@ -68,7 +71,7 @@ const citationPdfUrl = url
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Article",
-  headline: title,
+  headline: citationTitle,
   description: description || undefined,
   datePublished: published || undefined,
   dateModified: modified || published || undefined,
@@ -84,7 +87,7 @@ const jsonLd = {
 };
 ---
 
-<title>{title}</title>
+<title>{citationTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={url} />
 
@@ -97,13 +100,13 @@ const jsonLd = {
 {citationPdfUrl && <meta name="citation_pdf_url" content={citationPdfUrl} />}
 
 <meta property="og:type" content="article" />
-<meta property="og:title" content={title} />
+<meta property="og:title" content={citationTitle} />
 {description && <meta property="og:description" content={description} />}
 <meta property="og:url" content={url} />
 <meta property="og:locale" content="en_US" />
-{baseUrl && <meta property="og:site_name" content={title} />}
+{baseUrl && <meta property="og:site_name" content={citationTitle} />}
 {ogImage && <meta property="og:image" content={ogImage} />}
-{ogImage && <meta property="og:image:alt" content={title} />}
+{ogImage && <meta property="og:image:alt" content={citationTitle} />}
 {published && <meta property="article:published_time" content={published} />}
 {modified && <meta property="article:modified_time" content={modified} />}
 {authors.map((a) => <meta property="article:author" content={a} />)}
@@ -112,9 +115,9 @@ const jsonLd = {
   name="twitter:card"
   content={ogImage ? "summary_large_image" : "summary"}
 />
-<meta name="twitter:title" content={title} />
+<meta name="twitter:title" content={citationTitle} />
 {description && <meta name="twitter:description" content={description} />}
 {ogImage && <meta name="twitter:image" content={ogImage} />}
-{ogImage && <meta name="twitter:image:alt" content={title} />}
+{ogImage && <meta name="twitter:image:alt" content={citationTitle} />}
 
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
