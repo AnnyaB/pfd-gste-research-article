@@ -53,6 +53,8 @@ export function stripHtml(text: string): string {
 export function slugify(text: string): string {
   return (
     String(text || "")
+      .replace(/\\n/g, " ")
+      .replace(/[\r\n]+/g, " ")
       .normalize("NFKD")
       .replace(/\p{Diacritic}+/gu, "")
       .toLowerCase()
