@@ -143,6 +143,10 @@ const assetBase = import.meta.env.BASE_URL.endsWith("/")
         <p><a href={`https://doi.org/${doi}`} target="_blank" rel="noopener noreferrer">{doi}</a></p>
       </div>
     )}
+    <div class="meta-container-cell meta-container-cell--openreview">
+      <h3>OpenReview</h3>
+      <p><a href="https://openreview.net/forum?id=NkcVE3jgce" target="_blank" rel="noopener noreferrer">View preprint</a></p>
+    </div>
     {showPdf && (
       <div class="meta-container-cell meta-container-cell--pdf">
         <div class="pdf-header-wrapper">
